@@ -1,0 +1,48 @@
+server:
+  port: 8080
+  error:
+    include-message: always
+
+spring:
+  config:
+    import: "optional:file:./.env[.properties],optional:file:../.env[.properties]"
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 7MB
+  ai:
+    openai:
+      base-url: ${NVIDIA_BASE_URL:https://integrate.api.nvidia.com/v1}
+      api-key: ${NVIDIA_API_KEY:missing-key}
+      embedding:
+        base-url: ${NVIDIA_EMBEDDINGS_BASE_URL:${NVIDIA_BASE_URL:https://integrate.api.nvidia.com/v1}}
+        model: ${NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}
+      chat:
+        options:
+          model: ${NVIDIA_MODEL:nvidia/nemotron-3.5-super-vl-120b-a12b}
+          temperature: 0.3
+          max-tokens: 2048
+    vectorstore:
+      pgvector:
+        table-name: vector_store
+        schema-name: public
+        dimensions: 1024
+        distance-type: COSINE_DISTANCE
+        index-type: NONE
+        initialize-schema: false
+
+app:
+  cors-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+  embedding:
+    base-url: ${NVIDIA_EMBEDDINGS_BASE_URL:${NVIDIA_BASE_URL:https://integrate.api.nvidia.com/v1}}
+    api-key: ${NVIDIA_API_KEY:missing-key}
+    model: ${NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}
+    dimensions: ${NVIDIA_EMBEDDING_DIMENSIONS:1024}
+  rag:
+    index-on-startup: true
