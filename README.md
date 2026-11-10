@@ -6,6 +6,7 @@ A React dashboard with a Java 21 / Spring Boot API and Spring AI. It supports:
 - Crop photo symptom triage through the multimodal NVIDIA Nemotron endpoint configured in the backend.
 - PostgreSQL storage for source documents, marketplace sample lots, listing drafts, and prepared orders.
 - pgvector retrieval for source passages, with a database keyword-search fallback if embedding service calls are unavailable.
+- A token-protected source manager for previewing PDF or approved HTTPS imports, editing extracted text, and re-indexing saved references.
 - Explicit uncertainty language and referral to a local extension officer when symptoms or source coverage are insufficient.
 
 ## Run it
@@ -18,6 +19,8 @@ A React dashboard with a Java 21 / Spring Boot API and Spring AI. It supports:
    SPRING_DATASOURCE_USERNAME=your_postgres_user
    SPRING_DATASOURCE_PASSWORD=your_postgres_password
    ```
+
+   Set a private `SOURCE_ADMIN_TOKEN` in `.env` to unlock **Manage sources** in the Source library. Keep the token private; the browser holds it in memory only.
 
 3. Ensure PostgreSQL has the pgvector extension available and that the configured database user can create it. On first startup, Flyway creates the tables and seeds the source library and sample market lots.
 4. Start the backend from `backend/` with Maven and Java 21+: `mvn spring-boot:run`.
@@ -35,6 +38,8 @@ At backend startup, source passages are embedded with NVIDIA's Nemotron embeddin
 - `POST /api/market/listings` (prepare and persist a produce listing draft)
 - `POST /api/market/orders` (prepare and persist an order draft)
 - `GET /api/sources`
+
+The source manager API uses `X-Source-Admin-Token`. It exposes PDF and approved-URL preview endpoints, plus create, edit, re-index, and delete operations under `/api/admin/sources`. Imports are limited to 6 MB and 180,000 extracted characters. URL imports accept HTTPS pages and PDFs hosted on approved agriculture, education, and government domains; PDF previews with no extractable text need OCR before import. Review and edit the extracted text and source metadata in the UI before saving. User-added sources are indexed immediately when the embedding service is available; an indexing retry is available if it is not.
 
 ## Source notes
 

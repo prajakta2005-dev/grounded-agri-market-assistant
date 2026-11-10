@@ -14,7 +14,7 @@ import java.util.UUID;
 public class SourceDocumentRepository {
     private static final String SELECT_COLUMNS = """
             id, title, organization, document_date, accessed_date, url, crops, content,
-            category, crop_filter, region_filter
+            category, crop_filter, region_filter, managed_by_user, source_type, file_name
             """;
 
     private static final RowMapper<SourceDocumentEntry> ENTRY_MAPPER = (rs, rowNum) ->
@@ -27,10 +27,13 @@ public class SourceDocumentRepository {
                             rs.getString("accessed_date"),
                             rs.getString("url"),
                             rs.getString("crops"),
-                            rs.getString("content")),
+                            rs.getString("content"),
+                            rs.getString("source_type"),
+                            rs.getString("file_name")),
                     rs.getString("category"),
                     rs.getString("crop_filter"),
-                    rs.getString("region_filter"));
+                    rs.getString("region_filter"),
+                    rs.getBoolean("managed_by_user"));
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -40,6 +43,48 @@ public class SourceDocumentRepository {
 
     public List<SourceDocumentEntry> findAllEntries() {
         return jdbcTemplate.query("SELECT " + SELECT_COLUMNS + " FROM source_document ORDER BY id", ENTRY_MAPPER);
+    }
+
+    public SourceDocumentEntry findEntryById(String id) {
+        return jdbcTemplate.query("SELECT " + SELECT_COLUMNS + " FROM source_document WHERE id = ?",
+                ENTRY_MAPPER, id).stream().findFirst().orElse(null);
+    }
+
+    public List<ManagedSourceDocument> findAdminSources() {
+        return jdbcTemplate.query("SELECT " + SELECT_COLUMNS + ", "
+                        + "EXISTS (SELECT 1 FROM source_vector_state state WHERE state.source_id = source_document.id) AS indexed "
+                        + "FROM source_document ORDER BY managed_by_user DESC, title",
+                (rs, rowNum) -> {
+                    SourceDocumentEntry entry = ENTRY_MAPPER.mapRow(rs, rowNum);
+                    return new ManagedSourceDocument(entry.document(), entry.category(), entry.cropFilter(),
+                            entry.regionFilter(), entry.managedByUser(), rs.getBoolean("indexed"));
+                });
+    }
+
+    public void insertManaged(SourceDocumentEntry entry) {
+        SourceDocument document = entry.document();
+        jdbcTemplate.update("INSERT INTO source_document "
+                        + "(id, title, organization, document_date, accessed_date, url, crops, content, "
+                        + "category, crop_filter, region_filter, managed_by_user, source_type, file_name) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true, ?, ?)",
+                document.id(), document.title(), document.organization(), document.documentDate(),
+                document.accessedDate(), document.url(), document.crops(), document.content(),
+                entry.category(), entry.cropFilter(), entry.regionFilter(), document.sourceType(), document.fileName());
+    }
+
+    public boolean updateManaged(SourceDocumentEntry entry) {
+        SourceDocument document = entry.document();
+        return jdbcTemplate.update("UPDATE source_document SET title = ?, organization = ?, document_date = ?, "
+                        + "accessed_date = ?, url = ?, crops = ?, content = ?, category = ?, crop_filter = ?, "
+                        + "region_filter = ?, source_type = ?, file_name = ? "
+                        + "WHERE id = ? AND managed_by_user = true",
+                document.title(), document.organization(), document.documentDate(), document.accessedDate(),
+                document.url(), document.crops(), document.content(), entry.category(), entry.cropFilter(),
+                entry.regionFilter(), document.sourceType(), document.fileName(), document.id()) == 1;
+    }
+
+    public boolean deleteManaged(String id) {
+        return jdbcTemplate.update("DELETE FROM source_document WHERE id = ? AND managed_by_user = true", id) == 1;
     }
 
     public List<SourceDocument> findAll() {

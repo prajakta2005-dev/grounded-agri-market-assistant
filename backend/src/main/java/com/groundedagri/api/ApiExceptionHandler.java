@@ -2,6 +2,7 @@ package com.groundedagri.api;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -17,6 +18,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ProblemDetail invalidRequest(MethodArgumentNotValidException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Check the required fields and values, then try again.");
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    ProblemDetail processingError(IllegalStateException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, exception.getMessage());
     }
 
     @ExceptionHandler(ResponseStatusException.class)

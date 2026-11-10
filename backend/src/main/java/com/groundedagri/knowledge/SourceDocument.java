@@ -8,5 +8,7 @@ public record SourceDocument(
         String accessedDate,
         String url,
         String crops,
-        String content
+        String content,
+        String sourceType,
+        String fileName
 ) {}

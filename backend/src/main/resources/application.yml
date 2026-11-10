@@ -46,3 +46,5 @@ app:
     dimensions: ${NVIDIA_EMBEDDING_DIMENSIONS:1024}
   rag:
     index-on-startup: true
+  source-admin:
+    token: "6D7DE6D735440200F552DE8E444E5539905739631C18C027979DFCCCA89C1A7A"

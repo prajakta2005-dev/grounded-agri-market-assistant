@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import SourceManager from './SourceManager'
 
 const API = import.meta.env.VITE_API_BASE || 'http://localhost:8080'
 
@@ -32,14 +33,15 @@ function Icon({ name, size = 18 }) {
 }
 
 function SourceCard({ source, index }) {
-  return <a className="source-card" href={source.url} target="_blank" rel="noreferrer">
+  const Tag = source.url ? 'a' : 'div'
+  return <Tag className="source-card" href={source.url || undefined} target={source.url ? '_blank' : undefined} rel={source.url ? 'noreferrer' : undefined}>
     <div className="source-number">S{index + 1}</div>
     <div className="source-copy">
       <strong>{source.title}</strong>
       <span>{source.organization} · {source.documentDate}</span>
     </div>
-    <span className="source-open">↗</span>
-  </a>
+    <span className="source-open">{source.url ? '↗' : 'PDF'}</span>
+  </Tag>
 }
 
 function ListingCard({ listing, onOrder }) {
@@ -69,6 +71,7 @@ export default function App() {
   const [marketError, setMarketError] = useState('')
   const [sources, setSources] = useState([])
   const [sourcesError, setSourcesError] = useState('')
+  const [showSourceManager, setShowSourceManager] = useState(false)
   const [showListingForm, setShowListingForm] = useState(false)
   const [listingForm, setListingForm] = useState({ crop: '', variety: '', quantityKg: '', pricePerKg: '', location: '', harvestDate: '', seller: '' })
   const [listingBusy, setListingBusy] = useState(false)
@@ -252,8 +255,10 @@ export default function App() {
         {view === 'sources' && <section className="sources-view">
           <div className="view-heading"><div><div className="eyebrow"><span className="eyebrow-dot"/> FIELD LIBRARY</div><h1>Evidence, <em>in reach.</em></h1><p>Documents used by the assistant, with publication and access dates where available.</p></div><span className="source-count-pill"><Icon name="book" size={16}/>{sources.length} references</span></div>
           <div className="source-intro"><div className="source-intro-icon"><Icon name="book" size={22}/></div><div><strong>How grounded answers work</strong><p>The assistant retrieves matching references for each question and links them beside its response. Undated pages are marked as undated; regional or older recommendations may not reflect current local conditions.</p></div></div>
+          <div className="manager-open-row"><button className="button button-dark" onClick={() => setShowSourceManager(!showSourceManager)}><Icon name="plus" size={15}/>{showSourceManager ? 'Hide source manager' : 'Manage sources'}</button></div>
+          {showSourceManager && <SourceManager onClose={() => setShowSourceManager(false)} onSaved={loadSources}/>}
           {sourcesError && <div className="error-banner"><Icon name="alert" size={16}/>{sourcesError}</div>}
-          <div className="source-library-list">{sources.map((source, index) => <article className="library-row" key={source.id}><span className="library-index">{String(index + 1).padStart(2, '0')}</span><div className="library-body"><div className="library-tags"><span>{source.crops}</span><span>{source.documentDate}</span></div><h2>{source.title}</h2><p>{source.content}</p><div className="library-foot"><span>{source.organization} · Accessed {source.accessedDate}</span><a href={source.url} target="_blank" rel="noreferrer">Open original source <span>↗</span></a></div></div></article>)}</div>
+          <div className="source-library-list">{sources.map((source, index) => <article className="library-row" key={source.id}><span className="library-index">{String(index + 1).padStart(2, '0')}</span><div className="library-body"><div className="library-tags"><span>{source.crops}</span><span>{source.documentDate}</span>{source.sourceType === 'UPLOAD' && <span>Uploaded PDF</span>}</div><h2>{source.title}</h2><p>{source.content}</p><div className="library-foot"><span>{source.organization} | Accessed {source.accessedDate}{source.fileName ? ` | ${source.fileName}` : ''}</span>{source.url ? <a href={source.url} target="_blank" rel="noreferrer">Open original source</a> : <span>Text extracted from uploaded document</span>}</div></div></article>)}</div>
           <div className="access-note"><Icon name="calendar" size={16}/> Library references reviewed Nov 10, 2026. Undated pages are not assigned a publication date.</div>
         </section>}
       </div>
